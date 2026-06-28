@@ -345,17 +345,20 @@ let studentListCache = {};
 // Gemini API 호출 공통 함수
 // ============================================================
 async function callGemini(prompt, apiKey, maxTokens = 600) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: maxTokens }
-      })
-    }
-  );
+  // 새 형식 키(AQ.로 시작)는 v1alpha 엔드포인트 사용
+  const isNewKey = apiKey.startsWith('AQ.');
+  const endpoint = isNewKey
+    ? `https://generativelanguage.googleapis.com/v1alpha/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+    : `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: maxTokens }
+    })
+  });
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -779,19 +782,16 @@ async function submitForm() {
       action: 'save',
       school, grade, classNum, num, studentName, date, counselType, content, action, nextDate
     };
-    const res = await fetch(webhook, {
+    // Apps Script는 CORS 미지원 → no-cors 모드 (저장은 됨, 응답 못 읽음)
+    await fetch(webhook, {
       method: 'POST',
+      mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    const data = await res.json();
-    if (data.success) {
-      showToast('✅ 상담일지가 저장되었습니다!', 'success');
-      delete studentListCache[school];
-      resetForm();
-    } else {
-      throw new Error(data.error || '저장 실패');
-    }
+    showToast('✅ 상담일지가 저장되었습니다!', 'success');
+    delete studentListCache[school];
+    resetForm();
   } catch(e) {
     showToast('⚠️ 저장 실패: Webhook URL을 확인해 주세요', 'error');
     console.error(e);
