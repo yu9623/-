@@ -1,504 +1,126 @@
-// ============================================================
-// 상수 & 상태
-// ============================================================
-const TYPE_HINTS = {
-  학업: "📚 작성 포인트: 학습 태도, 성적 변화, 어려운 과목, 공부 방법, 학습 환경",
-  진로: "🎯 작성 포인트: 희망 진로, 적성 탐색, 진학 계획, 부모님 의견, 걱정되는 점",
-  교우관계: "👥 작성 포인트: 관계 대상, 갈등 내용, 감정 표현, 해결 시도 여부, 주변 반응",
-  가정: "🏠 작성 포인트: 가정환경 변화, 부모 관계, 경제적 어려움, 지지체계",
-  정서심리: "💛 작성 포인트: 현재 감정 상태, 수면/식사, 자해 여부, 스트레스 원인, 지지 자원",
-  행동: "⚡ 작성 포인트: 문제 행동 유형, 발생 빈도, 촉발 요인, 주변 반응, 이전 시도",
-  기타: "✏️ 상담 내용을 자유롭게 기록해 주세요."
-};
-
-let polishedContent = '';
-let currentStudentHistory = [];
-let studentListCache = {};
-
-// ============================================================
-// Gemini API 호출 공통 함수
-// ============================================================
-async function callGemini(prompt, apiKey, maxTokens = 600) {
-  const isNewKey = apiKey.startsWith('AQ.');
-  const endpoint = isNewKey
-    ? `https://generativelanguage.googleapis.com/v1alpha/models/gemini-2.0-flash:generateContent?key=${apiKey}`
-    : `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: maxTokens }
-    })
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학생 상담일지</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ivory:#FAFAF7;--ivory-dark:#F5F5F0;--ivory-border:#E4E4DE;
+  --brown:#6B6B6B;--brown-light:#888888;--brown-dark:#3A3A3A;
+  --text:#32352E;--text-muted:#7A7E74;
+  --accent:#C8BA5A;--accent-soft:#FDFBEA;
+  --yellow:#F7F2C0;--yellow-border:#E8DF88;--yellow-dark:#B0A43A;
+  --gray-bg:#F2F2F0;--gray-border:#DDDDD8;--gray-card:#FFFFFF;
+  --success:#7A9E7E;--error:#C46A6A;
+  --white:#FFFFFF;
+  --shadow:0 2px 18px rgba(80,90,60,0.07);
+  --radius:14px;--radius-sm:8px;
 }
+body{background:var(--gray-bg);font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--text);min-height:100vh;padding:0 0 80px}
 
-// ============================================================
-// 초기화
-// ============================================================
-function init() {
-  document.getElementById('date').value = new Date().toISOString().split('T')[0];
-  buildClassOptions();
-  buildNumOptions();
-  loadSchoolsToSelect();
-  updateStatus();
-}
+/* Header */
+header{background:var(--yellow);border-bottom:1.5px solid var(--yellow-border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:34px;height:34px;background:var(--brown-dark);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.logo h1{font-size:17px;font-weight:700;color:var(--brown-dark);letter-spacing:-.3px}
+.logo span{font-size:11px;color:var(--text-muted);display:block;font-weight:400}
+.header-btns{display:flex;gap:8px}
+.btn-hdr{padding:7px 13px;border:1.5px solid var(--yellow-border);border-radius:var(--radius-sm);background:rgba(255,255,255,0.6);color:var(--text-muted);font-size:12px;cursor:pointer;transition:all .2s}
+.btn-hdr:hover{border-color:var(--brown);color:var(--brown);background:var(--white)}
 
-function buildClassOptions() {
-  const sel = document.getElementById('classNum');
-  sel.innerHTML = '<option value="">반</option>';
-  for (let i = 1; i <= 16; i++) {
-    const o = document.createElement('option');
-    o.value = o.textContent = i;
-    sel.appendChild(o);
-  }
-}
+/* Container */
+.container{max-width:800px;margin:0 auto;padding:28px 20px}
+.page-title{font-size:20px;font-weight:700;color:var(--brown-dark);margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text-muted);margin-bottom:28px}
 
-function buildNumOptions() {
-  const sel = document.getElementById('num');
-  sel.innerHTML = '<option value="">번호</option>';
-  for (let i = 1; i <= 40; i++) {
-    const o = document.createElement('option');
-    o.value = o.textContent = i;
-    sel.appendChild(o);
-  }
-}
+/* Card */
+.card{background:var(--white);border-radius:var(--radius);border:1.5px solid var(--gray-border);padding:24px 26px;margin-bottom:18px;box-shadow:var(--shadow)}
+.card-title{font-size:13px;font-weight:700;color:var(--brown-dark);text-transform:uppercase;letter-spacing:.5px;margin-bottom:18px;display:flex;align-items:center;gap:7px}
+.card-title .dot{width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block}
 
-// ============================================================
-// 설정 (localStorage)
-// ============================================================
-function getSettings() {
-  return {
-    webhook: localStorage.getItem('cs_webhook') || '',
-    apiKey: localStorage.getItem('cs_apikey') || '',
-    schools: JSON.parse(localStorage.getItem('cs_schools') || '[]')
-  };
-}
+/* Form */
+.form-row{display:grid;gap:12px;margin-bottom:12px}
+.col2{grid-template-columns:1fr 1fr}
+.col3{grid-template-columns:1fr 1fr 1fr}
+.col4{grid-template-columns:1fr 1fr 1fr 1fr}
+.col1{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:5px}
+label{font-size:12px;font-weight:600;color:var(--text-muted)}
+input,select,textarea{padding:9px 12px;border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);background:var(--gray-bg);font-family:inherit;transition:border-color .2s,background .2s;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:var(--white)}
+textarea{resize:vertical;min-height:100px;line-height:1.65}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237A7E74' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;background-color:var(--gray-bg)}
 
-function saveSettings() {
-  const webhook = document.getElementById('s_webhook').value.trim();
-  const apiKey = document.getElementById('s_apikey').value.trim();
-  localStorage.setItem('cs_webhook', webhook);
-  localStorage.setItem('cs_apikey', apiKey);
+/* 학생 선택 카드 */
+.student-card{background:var(--yellow);border:1.5px solid var(--yellow-border);border-radius:var(--radius-sm);padding:14px 16px;margin-top:10px;display:none}
+.student-card.show{display:block}
+.student-name-big{font-size:18px;font-weight:700;color:var(--brown-dark)}
+.student-meta{font-size:13px;color:var(--text-muted);margin-top:3px}
 
-  const items = document.querySelectorAll('#schoolList .school-item');
-  const schools = Array.from(items).map(el => el.dataset.name);
-  localStorage.setItem('cs_schools', JSON.stringify(schools));
+/* 이전 상담 요약 */
+.prev-summary{background:var(--gray-bg);border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);padding:14px 16px;margin-top:14px;display:none}
+.prev-summary.show{display:block}
+.prev-summary-label{font-size:11px;font-weight:700;color:var(--brown-dark);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.prev-summary-text{font-size:13px;color:var(--text);line-height:1.7}
+.prev-summary-date{font-size:11px;color:var(--text-muted);margin-top:6px}
 
-  updateStatus();
-  loadSchoolsToSelect();
-  closeModal('settingsModal');
-  showToast('설정이 저장되었습니다', 'success');
-}
+/* AI 추천 */
+.ai-box{background:var(--yellow);border:1.5px solid var(--yellow-border);border-radius:var(--radius-sm);padding:14px 16px}
+.ai-box-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ai-badge-btn{display:inline-flex;align-items:center;gap:5px;background:var(--brown-dark);color:var(--white);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:700;border:none;cursor:pointer;transition: background 0.2s;}
+.ai-badge-btn:hover{background:#222222}
+.ai-hint{font-size:11px;color:var(--text-muted)}
+.ai-question{background:var(--white);border:1px solid var(--yellow-border);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:7px;font-size:13px;color:var(--text);cursor:pointer;transition:border-color .2s,background .2s;display:flex;align-items:flex-start;gap:9px;line-height:1.5}
+.ai-question:last-child{margin-bottom:0}
+.ai-question:hover{border-color:var(--yellow-dark);background:var(--accent-soft)}
+.q-num{font-size:10px;font-weight:700;color:var(--yellow-dark);background:var(--yellow);border:1px solid var(--yellow-border);border-radius:4px;padding:2px 5px;flex-shrink:0;margin-top:1px}
+.ai-empty{font-size:12px;color:var(--text-muted);text-align:center;padding:6px}
 
-function updateStatus() {
-  const { webhook, apiKey } = getSettings();
-  const el = document.getElementById('statusBadge');
-  if (webhook && apiKey) {
-    el.innerHTML = '<span class="status-dot ok"></span>연동 완료';
-    el.style.color = '#7A9E7E';
-  } else {
-    el.innerHTML = '<span class="status-dot ng"></span>설정 필요';
-    el.style.color = '#C4706A';
-  }
-}
+/* 정리 결과 */
+.polish-result{background:var(--gray-bg);border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);padding:14px 16px;margin-top:10px;display:none}
+.polish-result.show{display:block}
+.polish-label{font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.polish-text{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap}
+.polish-actions{display:flex;gap:8px;margin-top:10px}
 
-function openSettings() {
-  const { webhook, apiKey, schools } = getSettings();
-  document.getElementById('s_webhook').value = webhook;
-  document.getElementById('s_apikey').value = apiKey;
-  renderSchoolList(schools);
-  document.getElementById('settingsModal').classList.add('open');
-}
+/* Buttons */
+.btn{padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;border:none;font-family:inherit}
+.btn-brown{background:var(--brown-dark);color:var(--white)}
+.btn-brown:hover{background:#222222}
+.btn-brown:disabled{background:var(--text-muted);cursor:not-allowed}
+.btn-outline{background:var(--white);color:var(--brown-dark);border:1.5px solid var(--gray-border)}
+.btn-outline:hover{border-color:var(--brown-dark)}
+.btn-success{background:var(--success);color:var(--white)}
+.btn-success:hover{opacity:.9}
+.btn-submit{width:100%;padding:13px;background:var(--brown-dark);color:var(--white);border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:6px;font-family:inherit}
+.btn-submit:hover{background:#222222}
+.btn-submit:disabled{background:var(--text-muted);cursor:not-allowed}
 
-function renderSchoolList(schools) {
-  const ul = document.getElementById('schoolList');
-  ul.innerHTML = '';
-  schools.forEach(s => {
-    const li = document.createElement('li');
-    li.className = 'school-item';
-    li.dataset.name = s;
-    li.innerHTML = `<span>${s}</span><button onclick="removeSchool(this)" title="삭제">✕</button>`;
-    ul.appendChild(li);
-  });
-}
+/* Spinner */
+.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-function addSchool() {
-  const inp = document.getElementById('newSchoolInput');
-  const name = inp.value.trim();
-  if (!name) return;
-  const ul = document.getElementById('schoolList');
-  const li = document.createElement('li');
-  li.className = 'school-item';
-  li.dataset.name = name;
-  li.innerHTML = `<span>${name}</span><button onclick="removeSchool(this)" title="삭제">✕</button>`;
-  ul.appendChild(li);
-  inp.value = '';
-}
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:var(--white);padding:11px 22px;border-radius:30px;font-size:13px;font-weight:600;box-shadow:0 4px 24px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--success)}
+.toast.error{background:var(--error)}
 
-function removeSchool(btn) {
-  btn.closest('.school-item').remove();
-}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(60,45,25,.4);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:var(--white);border-radius:var(--radius);padding:28px;width:90%;max-width:520px;box-shadow:0 8px 48px rgba(60,40,10,.18);transform:translateY(16px);transition:transform .2s;max-height:90vh;overflow-y:auto}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal h2{font-size:16px;font-weight:700;color:var(--brown-dark);margin-bottom:5px}
+.modal-desc{font-size:12px;color:var(--text-muted);margin-bottom:20px;line-height:1.6}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.modal-section{margin-bottom:20px}
+.modal-section h3{font-size:12px;font-weight:700;color:var(--brown-dark);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;border-bottom:1px solid var(--gray-border);padding-bottom:6px}
 
-function loadSchoolsToSelect() {
-  const { schools } = getSettings();
-  const sel = document.getElementById('school');
-  sel.innerHTML = '<option value="">선택하세요</option>';
-  schools.forEach(s => {
-    const o = document.createElement('option');
-    o.value = o.textContent = s;
-    sel.appendChild(o);
-  });
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
-
-// ============================================================
-// 학교 선택 → 학생 목록 로드
-// ============================================================
-async function onSchoolChange() {
-  const school = document.getElementById('school').value;
-  if (!school) return;
-
-  const { webhook } = getSettings();
-  if (!webhook) return;
-
-  if (studentListCache[school]) {
-    populateNameSelect(school);
-    return;
-  }
-
-  try {
-    const url = `${webhook}?action=students&school=${encodeURIComponent(school)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    studentListCache[school] = data;
-    populateNameSelect(school);
-  } catch (e) {
-    console.error('학생 목록 로드 실패:', e);
-  }
-}
-
-function populateNameSelect(school) {
-  const students = studentListCache[school] || [];
-  const grade = document.getElementById('grade').value;
-  const cls = document.getElementById('classNum').value;
-  const num = document.getElementById('num').value;
-
-  const sel = document.getElementById('studentName');
-  sel.innerHTML = '<option value="">이름 선택</option>';
-
-  let filtered = students;
-  if (grade) filtered = filtered.filter(s => String(s.grade) === String(grade));
-  if (cls) filtered = filtered.filter(s => String(s.class) === String(cls));
-  if (num) filtered = filtered.filter(s => String(s.num) === String(num));
-
-  filtered.forEach(s => {
-    const o = document.createElement('option');
-    o.value = s.name;
-    o.dataset.grade = s.grade;
-    o.dataset.class = s.class;
-    o.dataset.num = s.num;
-    o.textContent = s.name;
-    sel.appendChild(o);
-  });
-
-  if (filtered.length === 1) {
-    sel.value = filtered[0].name;
-    onStudentSelect();
-  }
-}
-
-function onClassChange() {
-  const school = document.getElementById('school').value;
-  if (school) populateNameSelect(school);
-}
-
-// ============================================================
-// 학생 선택 → 이전 상담 로드 (자동 AI 요약 삭제)
-// ============================================================
-async function onStudentSelect() {
-  const name = document.getElementById('studentName').value;
-  const school = document.getElementById('school').value;
-  const grade = document.getElementById('grade').value;
-  const cls = document.getElementById('classNum').value;
-  const num = document.getElementById('num').value;
-
-  if (!name) {
-    hide('studentCard');
-    hide('prevSummary');
-    resetAI();
-    return;
-  }
-
-  document.getElementById('scName').textContent = name;
-  document.getElementById('scMeta').textContent =
-    [school, grade ? grade+'학년' : '', cls ? cls+'반' : '', num ? num+'번' : ''].filter(Boolean).join(' · ');
-  show('studentCard');
-
-  const { webhook } = getSettings();
-  if (!webhook) return;
-
-  show('prevSummary');
-  document.getElementById('prevText').textContent = '불러오는 중...';
-  document.getElementById('prevDate').textContent = '';
-
-  try {
-    const url = `${webhook}?action=records&school=${encodeURIComponent(school)}&name=${encodeURIComponent(name)}`;
-    const res = await fetch(url);
-    const records = await res.json();
-    currentStudentHistory = records;
-
-    if (!records || records.length === 0) {
-      document.getElementById('prevText').textContent = '아직 상담 기록이 없습니다.';
-      document.getElementById('prevDate').textContent = '';
-      resetAI();
-      return;
-    }
-
-    const last = records[records.length - 1];
-    const prevContent = last['상담내용'] || '';
-    const prevDateVal = last['날짜'] || last['저장시각'] || '';
-
-    // 💡 보안 및 에러 방지를 위해 자동 AI 요약을 수행하지 않고, 원본 글만 즉시 노출합니다.
-    document.getElementById('prevText').textContent = prevContent || '내용 없음';
-    document.getElementById('prevDate').textContent = prevDateVal ? `📅 직전 상담: ${prevDateVal}` : '';
-    resetAI();
-
-  } catch (e) {
-    document.getElementById('prevText').textContent = '기록을 불러오지 못했습니다.';
-    console.error(e);
-  }
-}
-
-// ============================================================
-// [수동 버튼 클릭] AI 추천 질문 생성 함수
-// ============================================================
-async function triggerAISuggestions() {
-  const name = document.getElementById('studentName').value;
-  const { apiKey } = getSettings();
-  
-  if (!name) {
-    showToast('먼저 학생을 선택해 주세요', 'error');
-    return;
-  }
-  if (!apiKey) {
-    showToast('Gemini API 키를 설정해 주세요', 'error');
-    openSettings();
-    return;
-  }
-  
-  if (currentStudentHistory && currentStudentHistory.length > 0) {
-    const last = currentStudentHistory[currentStudentHistory.length - 1];
-    const prevContent = last['상담내용'] || '';
-    await getAISuggestions(prevContent, name, apiKey);
-  } else {
-    await getAISuggestions("첫 상담입니다.", name, apiKey);
-  }
-}
-
-// ============================================================
-// Gemini API 추천 질문 바인딩
-// ============================================================
-async function getAISuggestions(prevContent, name, apiKey) {
-  const counselType = document.getElementById('counselType').value;
-  const qBox = document.getElementById('aiQuestions');
-  qBox.innerHTML = '<div class="ai-empty"><span class="spinner" style="border-top-color:var(--brown)"></span> 추천 질문 생성 중...</div>';
-
-  const prompt = `당신은 학교 상담 전문가입니다.
-학생 이름: ${name}
-상담 유형: ${counselType || '미정'}
-직전 상담 내용: ${prevContent}
-
-위 정보를 바탕으로 오늘 상담에서 활용할 후속 질문 3가지를 추천해 주세요.
-학생의 변화 파악과 심층 이해를 돕는 질문으로 작성하세요.
-
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트나 마크다운 없이 JSON만 출력하세요:
-{"questions":["질문1","질문2","질문3"]}`;
-
-  try {
-    const text = await callGemini(prompt, apiKey, 600);
-    const cleaned = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
-    const qs = parsed.questions || [];
-    if (qs.length === 0) throw new Error();
-    qBox.innerHTML = qs.map((q, i) =>
-      `<div class="ai-question" onclick="appendQ(${JSON.stringify(q)})">
-        <span class="q-num">Q${i+1}</span><span>${q}</span>
-      </div>`
-    ).join('');
-  } catch(e) {
-    qBox.innerHTML = '<div class="ai-empty">추천 질문을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>';
-  }
-}
-
-function resetAI() {
-  document.getElementById('aiQuestions').innerHTML =
-    '<div class="ai-empty">AI 추천질문 받기 버튼을 누르면 추천 질문을 분석해 보여줍니다 🌿</div>';
-}
-
-function appendQ(q) {
-  const el = document.getElementById('content');
-  el.value = el.value ? el.value + '\n\n[추천질문 활용] ' + q + '\n' : '[추천질문 활용] ' + q + '\n';
-  el.focus();
-  showToast('질문이 상담 내용에 추가되었습니다', 'success');
-}
-
-// ============================================================
-// 상담유형 힌트
-// ============================================================
-function onCounselTypeChange() {
-  const type = document.getElementById('counselType').value;
-  const hint = document.getElementById('typeHint');
-  if (type && TYPE_HINTS[type]) {
-    hint.textContent = TYPE_HINTS[type];
-    hint.classList.add('show');
-  } else {
-    hint.classList.remove('show');
-  }
-}
-
-// ============================================================
-// [Gemini] 상담 내용 정리
-// ============================================================
-async function polishContent() {
-  const { apiKey } = getSettings();
-  if (!apiKey) { showToast('Gemini API 키를 먼저 설정해 주세요', 'error'); openSettings(); return; }
-
-  const content = document.getElementById('content').value.trim();
-  if (!content) { showToast('상담 내용을 먼저 입력해 주세요', 'error'); return; }
-
-  const name = document.getElementById('studentName').value;
-  const type = document.getElementById('counselType').value;
-  const btn = document.getElementById('polishBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> 정리 중...';
-  document.getElementById('polishResult').classList.remove('show');
-
-  const prompt = `당신은 학교 상담 기록 전문가입니다.
-학생: ${name || '미입력'}
-상담유형: ${type || '미입력'}
-
-아래는 상담사가 대략적으로 적은 상담 내용입니다:
-"""
-${content}
-"""
-
-이 내용을 공식 상담일지에 기록할 수 있도록 다음 조건에 맞게 정리해 주세요:
-1. 사실 관계와 핵심 내용을 유지하되 문장을 자연스럽게 다듬기
-2. 상담 유형(${type || '미정'})에 맞는 전문적 표현 사용
-3. 학생의 상태, 주요 호소 내용, 상담 과정을 구분해 서술
-4. 3~5문장 분량의 한 문단으로 작성 (번호/목록 없이)
-5. 존댓말 없이 3인칭 서술 형식
-
-정리된 내용만 출력하세요. 다른 설명 없이.`;
-
-  try {
-    const result = await callGemini(prompt, apiKey, 600);
-    polishedContent = result;
-    if (!polishedContent) throw new Error();
-    document.getElementById('polishedText').textContent = polishedContent;
-    document.getElementById('polishResult').add('show');
-  } catch(e) {
-    showToast('정리에 실패했습니다. 잠시 후 다시 시도해 주세요.', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '✍️ AI로 정리하기';
-  }
-}
-
-function applyPolished() {
-  document.getElementById('content').value = polishedContent;
-  document.getElementById('polishResult').classList.remove('show');
-  showToast('정리된 내용이 적용되었습니다', 'success');
-}
-
-function cancelPolish() {
-  document.getElementById('polishResult').classList.remove('show');
-}
-
-// ============================================================
-// 저장
-// ============================================================
-async function submitForm() {
-  const { webhook } = getSettings();
-  if (!webhook) { showToast('Webhook URL을 먼저 설정해 주세요', 'error'); openSettings(); return; }
-
-  const school = document.getElementById('school').value;
-  const grade = document.getElementById('grade').value;
-  const classNum = document.getElementById('classNum').value;
-  const num = document.getElementById('num').value;
-  const studentName = document.getElementById('studentName').value;
-  const date = document.getElementById('date').value;
-  const counselType = document.getElementById('counselType').value;
-  const content = document.getElementById('content').value.trim();
-  const action = document.getElementById('action').value.trim();
-  const nextDate = document.getElementById('nextDate').value;
-
-  if (!school) { showToast('학교를 선택해 주세요', 'error'); return; }
-  if (!studentName) { showToast('학생을 선택해 주세요', 'error'); return; }
-  if (!date) { showToast('날짜를 선택해 주세요', 'error'); return; }
-  if (!counselType) { showToast('상담 유형을 선택해 주세요', 'error'); return; }
-  if (!content) { showToast('상담 내용을 입력해 주세요', 'error'); return; }
-
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.textContent = '저장 중...';
-
-  try {
-    const payload = {
-      action: 'save',
-      school, grade, classNum, num, studentName, date, counselType, content, action, nextDate
-    };
-    await fetch(webhook, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    showToast('✅ 상담일지가 저장되었습니다!', 'success');
-    delete studentListCache[school];
-    resetForm();
-  } catch(e) {
-    showToast('⚠️ 저장 실패: Webhook URL을 확인해 주세요', 'error');
-    console.error(e);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '📋 상담일지 저장하기';
-  }
-}
-
-function resetForm() {
-  ['content','action'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('counselType').value = '';
-  document.getElementById('nextDate').value = '';
-  document.getElementById('date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('polishResult').classList.remove('show');
-  document.getElementById('typeHint').classList.remove('show');
-  polishedContent = '';
-}
-
-// ============================================================
-// Utils
-// ============================================================
-function show(id) { document.getElementById(id).classList.add('show'); }
-function hide(id) { document.getElementById(id).classList.remove('show'); }
-
-function showToast(msg, type='') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast ' + type;
-  setTimeout(() => t.classList.add('show'), 10);
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-document.querySelectorAll('.modal-overlay').forEach(el => {
-  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-});
-
-init();
+/* School list */
+.school-list{list-style:none;margin-bottom:10px}
+.school-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:var(--radius-sm);margin-bottom:6px;font-size:13px}
+.school-item button{background:none;border:none;color:var(--error);cursor:pointer;font-size:16px;padding:0 4px}
+.add
