@@ -1,330 +1,3 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>학생 상담일지</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --ivory:#FAFAF7;--ivory-dark:#F5F5F0;--ivory-border:#E4E4DE;
-  --brown:#6B6B6B;--brown-light:#888888;--brown-dark:#3A3A3A;
-  --text:#32352E;--text-muted:#7A7E74;
-  --accent:#C8BA5A;--accent-soft:#FDFBEA;
-  --yellow:#F7F2C0;--yellow-border:#E8DF88;--yellow-dark:#B0A43A;
-  --gray-bg:#F2F2F0;--gray-border:#DDDDD8;--gray-card:#FFFFFF;
-  --success:#7A9E7E;--error:#C46A6A;
-  --white:#FFFFFF;
-  --shadow:0 2px 18px rgba(80,90,60,0.07);
-  --radius:14px;--radius-sm:8px;
-}
-body{background:var(--gray-bg);font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--text);min-height:100vh;padding:0 0 80px}
-
-/* Header */
-header{background:var(--yellow);border-bottom:1.5px solid var(--yellow-border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-icon{width:34px;height:34px;background:var(--brown-dark);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px}
-.logo h1{font-size:17px;font-weight:700;color:var(--brown-dark);letter-spacing:-.3px}
-.logo span{font-size:11px;color:var(--text-muted);display:block;font-weight:400}
-.header-btns{display:flex;gap:8px}
-.btn-hdr{padding:7px 13px;border:1.5px solid var(--yellow-border);border-radius:var(--radius-sm);background:rgba(255,255,255,0.6);color:var(--text-muted);font-size:12px;cursor:pointer;transition:all .2s}
-.btn-hdr:hover{border-color:var(--brown);color:var(--brown);background:var(--white)}
-
-/* Container */
-.container{max-width:800px;margin:0 auto;padding:28px 20px}
-.page-title{font-size:20px;font-weight:700;color:var(--brown-dark);margin-bottom:4px}
-.page-sub{font-size:13px;color:var(--text-muted);margin-bottom:28px}
-
-/* Card */
-.card{background:var(--white);border-radius:var(--radius);border:1.5px solid var(--gray-border);padding:24px 26px;margin-bottom:18px;box-shadow:var(--shadow)}
-.card-title{font-size:13px;font-weight:700;color:var(--brown-dark);text-transform:uppercase;letter-spacing:.5px;margin-bottom:18px;display:flex;align-items:center;gap:7px}
-.card-title .dot{width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block}
-
-/* Form */
-.form-row{display:grid;gap:12px;margin-bottom:12px}
-.col2{grid-template-columns:1fr 1fr}
-.col3{grid-template-columns:1fr 1fr 1fr}
-.col4{grid-template-columns:1fr 1fr 1fr 1fr}
-.col1{grid-template-columns:1fr}
-.form-group{display:flex;flex-direction:column;gap:5px}
-label{font-size:12px;font-weight:600;color:var(--text-muted)}
-input,select,textarea{padding:9px 12px;border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);background:var(--gray-bg);font-family:inherit;transition:border-color .2s,background .2s;outline:none}
-input:focus,select:focus,textarea:focus{border-color:var(--accent);background:var(--white)}
-textarea{resize:vertical;min-height:100px;line-height:1.65}
-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237A7E74' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;background-color:var(--gray-bg)}
-
-/* 학생 선택 카드 */
-.student-card{background:var(--yellow);border:1.5px solid var(--yellow-border);border-radius:var(--radius-sm);padding:14px 16px;margin-top:10px;display:none}
-.student-card.show{display:block}
-.student-name-big{font-size:18px;font-weight:700;color:var(--brown-dark)}
-.student-meta{font-size:13px;color:var(--text-muted);margin-top:3px}
-
-/* 이전 상담 요약 */
-.prev-summary{background:var(--gray-bg);border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);padding:14px 16px;margin-top:14px;display:none}
-.prev-summary.show{display:block}
-.prev-summary-label{font-size:11px;font-weight:700;color:var(--brown-dark);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.prev-summary-text{font-size:13px;color:var(--text);line-height:1.7}
-.prev-summary-date{font-size:11px;color:var(--text-muted);margin-top:6px}
-
-/* AI 추천 */
-.ai-box{background:var(--yellow);border:1.5px solid var(--yellow-border);border-radius:var(--radius-sm);padding:14px 16px}
-.ai-box-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.ai-badge{display:inline-flex;align-items:center;gap:5px;background:var(--brown-dark);color:var(--white);border-radius:20px;padding:4px 11px;font-size:11px;font-weight:700}
-.ai-hint{font-size:11px;color:var(--text-muted)}
-.ai-question{background:var(--white);border:1px solid var(--yellow-border);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:7px;font-size:13px;color:var(--text);cursor:pointer;transition:border-color .2s,background .2s;display:flex;align-items:flex-start;gap:9px;line-height:1.5}
-.ai-question:last-child{margin-bottom:0}
-.ai-question:hover{border-color:var(--yellow-dark);background:var(--accent-soft)}
-.q-num{font-size:10px;font-weight:700;color:var(--yellow-dark);background:var(--yellow);border:1px solid var(--yellow-border);border-radius:4px;padding:2px 5px;flex-shrink:0;margin-top:1px}
-.ai-empty{font-size:12px;color:var(--text-muted);text-align:center;padding:6px}
-
-/* 정리 결과 */
-.polish-result{background:var(--gray-bg);border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);padding:14px 16px;margin-top:10px;display:none}
-.polish-result.show{display:block}
-.polish-label{font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.polish-text{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap}
-.polish-actions{display:flex;gap:8px;margin-top:10px}
-
-/* Buttons */
-.btn{padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;border:none;font-family:inherit}
-.btn-brown{background:var(--brown-dark);color:var(--white)}
-.btn-brown:hover{background:#222222}
-.btn-brown:disabled{background:var(--text-muted);cursor:not-allowed}
-.btn-outline{background:var(--white);color:var(--brown-dark);border:1.5px solid var(--gray-border)}
-.btn-outline:hover{border-color:var(--brown-dark)}
-.btn-success{background:var(--success);color:var(--white)}
-.btn-success:hover{opacity:.9}
-.btn-submit{width:100%;padding:13px;background:var(--brown-dark);color:var(--white);border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:6px;font-family:inherit}
-.btn-submit:hover{background:#222222}
-.btn-submit:disabled{background:var(--text-muted);cursor:not-allowed}
-
-/* Spinner */
-.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* Toast */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:var(--white);padding:11px 22px;border-radius:30px;font-size:13px;font-weight:600;box-shadow:0 4px 24px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.toast.success{background:var(--success)}
-.toast.error{background:var(--error)}
-
-/* Modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(60,45,25,.4);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
-.modal-overlay.open{opacity:1;pointer-events:auto}
-.modal{background:var(--white);border-radius:var(--radius);padding:28px;width:90%;max-width:520px;box-shadow:0 8px 48px rgba(60,40,10,.18);transform:translateY(16px);transition:transform .2s;max-height:90vh;overflow-y:auto}
-.modal-overlay.open .modal{transform:translateY(0)}
-.modal h2{font-size:16px;font-weight:700;color:var(--brown-dark);margin-bottom:5px}
-.modal-desc{font-size:12px;color:var(--text-muted);margin-bottom:20px;line-height:1.6}
-.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
-.modal-section{margin-bottom:20px}
-.modal-section h3{font-size:12px;font-weight:700;color:var(--brown-dark);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;border-bottom:1px solid var(--gray-border);padding-bottom:6px}
-
-/* School list */
-.school-list{list-style:none;margin-bottom:10px}
-.school-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:var(--radius-sm);margin-bottom:6px;font-size:13px}
-.school-item button{background:none;border:none;color:var(--error);cursor:pointer;font-size:16px;padding:0 4px}
-.add-school-row{display:flex;gap:8px}
-.add-school-row input{flex:1}
-.add-school-row button{flex-shrink:0}
-
-/* Status */
-.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
-.status-dot.ok{background:var(--success)}
-.status-dot.ng{background:var(--error)}
-
-/* 상담유형 설명 박스 */
-.type-hint{background:var(--yellow);border-left:3px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:10px 14px;margin-top:8px;font-size:12px;color:var(--brown-dark);line-height:1.7;display:none}
-.type-hint.show{display:block}
-
-@media(max-width:600px){.col3,.col4,.col2{grid-template-columns:1fr}.container{padding:16px 12px}header{padding:12px 14px}}
-</style>
-</head>
-<body>
-
-<!-- ===== Settings Modal ===== -->
-<div class="modal-overlay" id="settingsModal">
-  <div class="modal">
-    <h2>⚙️ 설정</h2>
-    <p class="modal-desc">Google Sheets 연동 정보와 학교 목록을 관리합니다.<br>입력 정보는 이 기기 브라우저에만 저장됩니다.</p>
-
-    <div class="modal-section">
-      <h3>🔗 연동 정보</h3>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Google Apps Script Webhook URL</label>
-        <input type="url" id="s_webhook" placeholder="https://script.google.com/macros/s/.../exec">
-      </div>
-      <div class="form-group">
-        <label>Gemini API Key</label>
-        <input type="password" id="s_apikey" placeholder="AIza...">
-      </div>
-    </div>
-
-    <div class="modal-section">
-      <h3>🏫 학교 목록</h3>
-      <ul class="school-list" id="schoolList"></ul>
-      <div class="add-school-row">
-        <input type="text" id="newSchoolInput" placeholder="학교 이름 입력 (예: OO중학교)">
-        <button class="btn btn-brown" onclick="addSchool()">추가</button>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('settingsModal')">닫기</button>
-      <button class="btn btn-brown" onclick="saveSettings()">저장</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== Header ===== -->
-<header>
-  <div class="logo">
-    <div class="logo-icon">📋</div>
-    <div>
-      <h1>학생 상담일지</h1>
-      <span id="statusBadge"><span class="status-dot ng"></span>설정 필요</span>
-    </div>
-  </div>
-  <div class="header-btns">
-    <button class="btn-hdr" onclick="openSettings()">⚙️ 설정</button>
-  </div>
-</header>
-
-<!-- ===== Main ===== -->
-<div class="container">
-  <p class="page-title">상담 기록 작성</p>
-  <p class="page-sub">학생을 선택하면 이전 상담 내용을 자동으로 불러옵니다.</p>
-
-  <!-- 카드 1: 기본 정보 -->
-  <div class="card">
-    <div class="card-title"><span class="dot"></span>기본 정보</div>
-    <div class="form-row col2">
-      <div class="form-group">
-        <label>학교</label>
-        <select id="school" onchange="onSchoolChange()">
-          <option value="">선택하세요</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>상담 날짜</label>
-        <input type="date" id="date">
-      </div>
-    </div>
-    <div class="form-row col4">
-      <div class="form-group">
-        <label>학년</label>
-        <select id="grade" onchange="onClassChange()">
-          <option value="">학년</option>
-          <option>1</option><option>2</option><option>3</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>반</label>
-        <select id="classNum" onchange="onClassChange()">
-          <option value="">반</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>번호</label>
-        <select id="num" onchange="onClassChange()">
-          <option value="">번호</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>학생 이름</label>
-        <select id="studentName" onchange="onStudentSelect()">
-          <option value="">이름 선택</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- 선택된 학생 카드 -->
-    <div class="student-card" id="studentCard">
-      <div class="student-name-big" id="scName"></div>
-      <div class="student-meta" id="scMeta"></div>
-    </div>
-
-    <!-- 이전 상담 요약 -->
-    <div class="prev-summary" id="prevSummary">
-      <div class="prev-summary-label">📂 직전 상담 요약</div>
-      <div class="prev-summary-text" id="prevText">불러오는 중...</div>
-      <div class="prev-summary-date" id="prevDate"></div>
-    </div>
-  </div>
-
-  <!-- 카드 2: AI 추천 질문 -->
-  <div class="card">
-    <div class="card-title"><span class="dot"></span>AI 추천 질문</div>
-    <div class="ai-box">
-  <div class="ai-box-header">
-    <button class="ai-badge" onclick="triggerAISuggestions()" style="cursor:pointer; border:none;">✨ AI 추천질문 받기</button>
-    <span class="ai-hint">클릭 시 생성 / 질문 선택 시 내용에 추가</span>
-  </div>
-
-      <div id="aiQuestions">
-        <div class="ai-empty">학생을 선택하면 이전 상담 내용을 분석해 추천 질문을 보여줍니다 🌿</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 카드 3: 오늘 상담 내용 -->
-  <div class="card">
-    <div class="card-title"><span class="dot"></span>오늘 상담 내용</div>
-    <div class="form-row col2" style="margin-bottom:14px">
-      <div class="form-group">
-        <label>상담 유형</label>
-        <select id="counselType" onchange="onCounselTypeChange()">
-          <option value="">선택하세요</option>
-          <option value="학업">학업 상담</option>
-          <option value="진로">진로 상담</option>
-          <option value="교우관계">교우관계 상담</option>
-          <option value="가정">가정 상담</option>
-          <option value="정서심리">정서·심리 상담</option>
-          <option value="행동">행동 상담</option>
-          <option value="기타">기타</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>다음 상담 예약일</label>
-        <input type="date" id="nextDate">
-      </div>
-    </div>
-
-    <!-- 상담 유형별 작성 가이드 -->
-    <div class="type-hint" id="typeHint"></div>
-
-    <div class="form-row col1">
-      <div class="form-group">
-        <label>상담 내용 (대략 적어도 됩니다 — 아래 정리 버튼으로 다듬어집니다)</label>
-        <textarea id="content" placeholder="오늘 나눈 이야기를 자유롭게 적어주세요. 키워드나 단편적인 문장도 괜찮습니다." style="min-height:120px"></textarea>
-      </div>
-    </div>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-      <button class="btn btn-brown" id="polishBtn" onclick="polishContent()">✍️ AI로 정리하기</button>
-    </div>
-
-    <!-- 정리 결과 -->
-    <div class="polish-result" id="polishResult">
-      <div class="polish-label">✅ 정리된 상담 내용 미리보기</div>
-      <div class="polish-text" id="polishedText"></div>
-      <div class="polish-actions">
-        <button class="btn btn-success" onclick="applyPolished()">이 내용으로 저장</button>
-        <button class="btn btn-outline" onclick="cancelPolish()">직접 수정하기</button>
-      </div>
-    </div>
-
-    <div class="form-row col1">
-      <div class="form-group">
-        <label>조치 사항</label>
-        <textarea id="action" placeholder="상담 후 취한 조치 또는 계획을 기록하세요." style="min-height:70px"></textarea>
-      </div>
-    </div>
-
-    <button class="btn-submit" id="submitBtn" onclick="submitForm()">📋 상담일지 저장하기</button>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
 // ============================================================
 // 상수 & 상태
 // ============================================================
@@ -346,7 +19,6 @@ let studentListCache = {};
 // Gemini API 호출 공통 함수
 // ============================================================
 async function callGemini(prompt, apiKey, maxTokens = 600) {
-  // 새 형식 키(AQ.로 시작)는 v1alpha 엔드포인트 사용
   const isNewKey = apiKey.startsWith('AQ.');
   const endpoint = isNewKey
     ? `https://generativelanguage.googleapis.com/v1alpha/models/gemini-2.0-flash:generateContent?key=${apiKey}`
@@ -549,7 +221,7 @@ function onClassChange() {
 }
 
 // ============================================================
-// 학생 선택 → 이전 상담 로드 + AI 추천
+// 학생 선택 → 이전 상담 로드 (자동 AI 요약 삭제)
 // ============================================================
 async function onStudentSelect() {
   const name = document.getElementById('studentName').value;
@@ -570,7 +242,7 @@ async function onStudentSelect() {
     [school, grade ? grade+'학년' : '', cls ? cls+'반' : '', num ? num+'번' : ''].filter(Boolean).join(' · ');
   show('studentCard');
 
-  const { webhook, apiKey } = getSettings();
+  const { webhook } = getSettings();
   if (!webhook) return;
 
   show('prevSummary');
@@ -592,18 +264,12 @@ async function onStudentSelect() {
 
     const last = records[records.length - 1];
     const prevContent = last['상담내용'] || '';
-    const prevAction = last['조치사항'] || '';
     const prevDateVal = last['날짜'] || last['저장시각'] || '';
 
-    if (apiKey && prevContent) {
-  // 직전 상담 요약만 자동으로 실행 (비교적 안전)
-  await summarizePrev(prevContent, prevAction, prevDateVal, name, apiKey);
-  // 자동 호출 라인은 과감히 지우거나 주석 처리합니다.
-} else {
-      document.getElementById('prevText').textContent = prevContent || '내용 없음';
-      document.getElementById('prevDate').textContent = prevDateVal ? `📅 ${prevDateVal}` : '';
-      resetAI();
-    }
+    // 💡 보안 및 에러 방지를 위해 자동 AI 요약을 수행하지 않고, 원본 글만 즉시 노출합니다.
+    document.getElementById('prevText').textContent = prevContent || '내용 없음';
+    document.getElementById('prevDate').textContent = prevDateVal ? `📅 직전 상담: ${prevDateVal}` : '';
+    resetAI();
 
   } catch (e) {
     document.getElementById('prevText').textContent = '기록을 불러오지 못했습니다.';
@@ -612,28 +278,33 @@ async function onStudentSelect() {
 }
 
 // ============================================================
-// [Gemini] 이전 상담 요약
+// [수동 버튼 클릭] AI 추천 질문 생성 함수
 // ============================================================
-async function summarizePrev(content, action, date, name, apiKey) {
-  const prompt = `다음은 ${name} 학생의 직전 상담 기록입니다.
-
-상담내용: ${content}
-조치사항: ${action}
-
-이 내용을 상담사가 오늘 상담 전에 빠르게 파악할 수 있도록 3~4문장으로 핵심만 요약해 주세요. 번호 목록 없이 자연스러운 문단 형태로 작성해 주세요.`;
-
-  try {
-    const summary = await callGemini(prompt, apiKey, 400);
-    document.getElementById('prevText').textContent = summary || content;
-    document.getElementById('prevDate').textContent = date ? `📅 직전 상담: ${date}` : '';
-  } catch(e) {
-    document.getElementById('prevText').textContent = content;
-    document.getElementById('prevDate').textContent = date ? `📅 ${date}` : '';
+async function triggerAISuggestions() {
+  const name = document.getElementById('studentName').value;
+  const { apiKey } = getSettings();
+  
+  if (!name) {
+    showToast('먼저 학생을 선택해 주세요', 'error');
+    return;
+  }
+  if (!apiKey) {
+    showToast('Gemini API 키를 설정해 주세요', 'error');
+    openSettings();
+    return;
+  }
+  
+  if (currentStudentHistory && currentStudentHistory.length > 0) {
+    const last = currentStudentHistory[currentStudentHistory.length - 1];
+    const prevContent = last['상담내용'] || '';
+    await getAISuggestions(prevContent, name, apiKey);
+  } else {
+    await getAISuggestions("첫 상담입니다.", name, apiKey);
   }
 }
 
 // ============================================================
-// [Gemini] AI 추천 질문
+// Gemini API 추천 질문 바인딩
 // ============================================================
 async function getAISuggestions(prevContent, name, apiKey) {
   const counselType = document.getElementById('counselType').value;
@@ -663,13 +334,13 @@ async function getAISuggestions(prevContent, name, apiKey) {
       </div>`
     ).join('');
   } catch(e) {
-    qBox.innerHTML = '<div class="ai-empty">추천 질문을 불러오지 못했습니다.</div>';
+    qBox.innerHTML = '<div class="ai-empty">추천 질문을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>';
   }
 }
 
 function resetAI() {
   document.getElementById('aiQuestions').innerHTML =
-    '<div class="ai-empty">학생을 선택하면 이전 상담 내용을 분석해 추천 질문을 보여줍니다 🌿</div>';
+    '<div class="ai-empty">AI 추천질문 받기 버튼을 누르면 추천 질문을 분석해 보여줍니다 🌿</div>';
 }
 
 function appendQ(q) {
@@ -733,9 +404,9 @@ ${content}
     polishedContent = result;
     if (!polishedContent) throw new Error();
     document.getElementById('polishedText').textContent = polishedContent;
-    document.getElementById('polishResult').classList.add('show');
+    document.getElementById('polishResult').add('show');
   } catch(e) {
-    showToast('정리에 실패했습니다. API 키를 확인해 주세요.', 'error');
+    showToast('정리에 실패했습니다. 잠시 후 다시 시도해 주세요.', 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = '✍️ AI로 정리하기';
@@ -784,7 +455,6 @@ async function submitForm() {
       action: 'save',
       school, grade, classNum, num, studentName, date, counselType, content, action, nextDate
     };
-    // Apps Script는 CORS 미지원 → no-cors 모드 (저장은 됨, 응답 못 읽음)
     await fetch(webhook, {
       method: 'POST',
       mode: 'no-cors',
@@ -832,32 +502,3 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 });
 
 init();
-</script>
-</body>
-</html>
-
-// 사용자가 직접 버튼을 눌렀을 때만 Gemini를 호출하는 안전한 함수
-async function triggerAISuggestions() {
-  const name = document.getElementById('studentName').value;
-  const { apiKey } = getSettings();
-
-  if (!name) {
-    showToast('먼저 학생을 선택해 주세요', 'error');
-    return;
-  }
-  if (!apiKey) {
-    showToast('Gemini API 키를 설정해 주세요', 'error');
-    openSettings();
-    return;
-  }
-
-  // 현재 선택된 학생의 이전 상담 내용 찾기
-  if (currentStudentHistory && currentStudentHistory.length > 0) {
-    const last = currentStudentHistory[currentStudentHistory.length - 1];
-    const prevContent = last['상담내용'] || '';
-    // 수동으로 호출 실행
-    await getAISuggestions(prevContent, name, apiKey);
-  } else {
-    showToast('이전 상담 기록이 없어 추천 질문을 생성할 수 없습니다.', 'error');
-  }
-}
