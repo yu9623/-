@@ -254,10 +254,11 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   <div class="card">
     <div class="card-title"><span class="dot"></span>AI 추천 질문</div>
     <div class="ai-box">
-      <div class="ai-box-header">
-        <span class="ai-badge">✨ Gemini AI</span>
-        <span class="ai-hint">클릭하면 상담 내용에 추가</span>
-      </div>
+  <div class="ai-box-header">
+    <button class="ai-badge" onclick="triggerAISuggestions()" style="cursor:pointer; border:none;">✨ AI 추천질문 받기</button>
+    <span class="ai-hint">클릭 시 생성 / 질문 선택 시 내용에 추가</span>
+  </div>
+
       <div id="aiQuestions">
         <div class="ai-empty">학생을 선택하면 이전 상담 내용을 분석해 추천 질문을 보여줍니다 🌿</div>
       </div>
@@ -595,9 +596,10 @@ async function onStudentSelect() {
     const prevDateVal = last['날짜'] || last['저장시각'] || '';
 
     if (apiKey && prevContent) {
-      await summarizePrev(prevContent, prevAction, prevDateVal, name, apiKey);
-      await getAISuggestions(prevContent, name, apiKey);
-    } else {
+  // 직전 상담 요약만 자동으로 실행 (비교적 안전)
+  await summarizePrev(prevContent, prevAction, prevDateVal, name, apiKey);
+  // 자동 호출 라인은 과감히 지우거나 주석 처리합니다.
+} else {
       document.getElementById('prevText').textContent = prevContent || '내용 없음';
       document.getElementById('prevDate').textContent = prevDateVal ? `📅 ${prevDateVal}` : '';
       resetAI();
@@ -833,3 +835,29 @@ init();
 </script>
 </body>
 </html>
+
+// 사용자가 직접 버튼을 눌렀을 때만 Gemini를 호출하는 안전한 함수
+async function triggerAISuggestions() {
+  const name = document.getElementById('studentName').value;
+  const { apiKey } = getSettings();
+
+  if (!name) {
+    showToast('먼저 학생을 선택해 주세요', 'error');
+    return;
+  }
+  if (!apiKey) {
+    showToast('Gemini API 키를 설정해 주세요', 'error');
+    openSettings();
+    return;
+  }
+
+  // 현재 선택된 학생의 이전 상담 내용 찾기
+  if (currentStudentHistory && currentStudentHistory.length > 0) {
+    const last = currentStudentHistory[currentStudentHistory.length - 1];
+    const prevContent = last['상담내용'] || '';
+    // 수동으로 호출 실행
+    await getAISuggestions(prevContent, name, apiKey);
+  } else {
+    showToast('이전 상담 기록이 없어 추천 질문을 생성할 수 없습니다.', 'error');
+  }
+}
